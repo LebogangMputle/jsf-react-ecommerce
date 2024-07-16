@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" x-data="{ isOpen: false }">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -11,7 +11,7 @@
     <meta name="msapplication-TileColor" content="#da532c" />
     <meta name="theme-color" content="#ffffff" />
     <!-- Primary Meta Tags -->
-    <title>SwiftCart — The fastest e-commerce store in SA</title>
+    <title x-text="'SwiftCart — The fastest e-commerce store in SA'"></title>
     <meta
       name="title"
       content="SwiftCart — The fastest e-commerce store in SA"
@@ -52,11 +52,703 @@
       property="twitter:image"
       content="https://metatags.io/images/meta-tags.png"
     />
-
-    <title>SwiftCart</title>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+
+    <div x-data="{ categories: [], product: null }">
+      <button @click="getCategories()">Fetch Categories</button>
+      <template x-if="categories.length > 0">
+        <ul>
+          <li x-for="category in categories" :key="category">{{ category }}</li>
+        </ul>
+      </template>
+      <template x-if="product">
+        <div>
+          <h2 x-text="product.title"></h2>
+          <p x-text="product.description"></p>
+        </div>
+      </template>
+    </div>
+    
+    <script>
+      function fetchData(url) {
+        return fetch(url)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok');
+            }
+            return response.json();
+          })
+          .catch(error => {
+            console.error('Fetch error:', error);
+            return { error };
+          });
+      }
+    
+      function getProduct(id) {
+        return fetchData(`https://fakestoreapi.com/products/${id}`);
+      }
+    
+      function getCategories() {
+        return fetchData('https://fakestoreapi.com/products/categories')
+          .then(data => {
+            if (data.error) {
+              throw new Error('Failed to fetch categories');
+            }
+            // Assuming the response data is an array of categories
+            Alpine.data('categories', data.response);
+          })
+          .catch(error => {
+            console.error('Error fetching categories:', error);
+          });
+      }
+    
+      document.addEventListener('alpine:init', () => {
+        Alpine.data('product', null);
+        Alpine.store('getProduct', getProduct);
+        Alpine.store('getCategories', getCategories);
+      });
+    </script>
+    
+    <div x-data="{ errorMessage: 'Data fetching failed, please check your network connection' }">
+      <template x-if="errorMessage">
+        <div class="mt-28 text-red-500 text-xl font-bold" x-text="errorMessage"></div>
+      </template>
+    </div>
+    
+    <div x-data="{
+      categories: [],
+      error: null,
+      filterItem: '',
+      searchTerm: '',
+      fetchProducts() {
+        // Your fetchProducts logic here, or integrate with Alpine.js as needed
+        console.log('Fetching products...');
+      },
+      searchProducts() {
+        // Your searchProducts logic here, or integrate with Alpine.js as needed
+        console.log('Searching products...');
+      },
+      toggleDropdown() {
+        this.$refs.dropdown.classList.toggle('hidden');
+      },
+      handleFilter(category) {
+        this.filterItem = category;
+        this.$refs.dropdown.classList.add('hidden');
+        this.fetchProducts();
+      },
+      handleSearch(event) {
+        this.searchTerm = event.target.value;
+        this.searchProducts();
+      },
+      initializeCategories() {
+        fetch('https://fakestoreapi.com/products/categories')
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Data fetching failed, please check your network connection');
+            }
+            return response.json();
+          })
+          .then(data => {
+            this.categories = data;
+          })
+          .catch(error => {
+            console.error('Error fetching categories:', error);
+            this.error = error.message;
+          });
+      },
+      init() {
+        this.initializeCategories();
+        this.fetchProducts();
+      }
+    }">
+      <template x-if="error">
+        <div class="mt-28 text-red-500 text-xl font-bold" x-text="error"></div>
+      </template>
+      
+      <form>
+        <div class="flex lg:w-[31.25rem] sm:w-[95%] md:w-full relative">
+          <button @click="toggleDropdown" class="flex-shrink-0 z-10 inline-flex items-center py-2.5 px-4 text-sm font-medium text-center text-gray-900 bg-gray-100 border border-gray-300 rounded-s-lg hover:bg-gray-200 " type="button">
+            <span x-text="filterItem || 'Select category'"></span>
+            <svg class="w-2.5 h-2.5 ms-2.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+              <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 4 4 4-4"/>
+            </svg>
+          </button>
+          <div id="dropdown" x-ref="dropdown" class="z-10 absolute top-[100%] hidden bg-white divide-y divide-gray-100 rounded-lg shadow w-44">
+            <ul class="py-2 text-sm text-gray-700" aria-labelledby="dropdown-button">
+              <li @click="handleFilter('All categories')" class="inline-flex w-full px-4 py-2 hover:bg-gray-100">All categories</li>
+              <template x-for="category in categories" :key="category">
+                <li>
+                  <button @click="handleFilter(category)" type="button" class="inline-flex w-full px-4 py-2 hover:bg-gray-100" x-text="category"></button>
+                </li>
+              </template>
+            </ul>
+          </div>
+          <div class="relative w-full">
+            <input type="search" id="search-dropdown" name="searchInput" class=" p-2.5 w-full z-20 text-sm text-gray-900 bg-gray-50 rounded-e-lg border-s-gray-50 border-s-2 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 " placeholder="Search products..." x-model="searchTerm" @input="handleSearch($event)">
+            <button type="submit" class="absolute top-0 end-0 p-2.5 text-sm font-medium h-full text-white bg-blue-700 rounded-e-lg border border-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 ">
+              <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
+              </svg>
+              <span class="sr-only">Search</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div x-data="{ currentPage: 'home' }">
+      <!-- Replace with your Layout component content -->
+      <header>
+        <nav>
+          <ul class="flex space-x-4">
+            <li>
+              <a @click="currentPage = 'home'" href="#">Home</a>
+            </li>
+            <li>
+              <a @click="currentPage = 'products'" href="#">Products</a>
+            </li>
+            <li>
+              <a @click="currentPage = 'login'" href="#">Login</a>
+            </li>
+          </ul>
+        </nav>
+      </header>
+      
+      <!-- Route Components -->
+      <template x-if="currentPage === 'home'">
+        <!-- Replace with your Home component content -->
+        <div>
+          Home Component Content
+        </div>
+      </template>
+      
+      <template x-if="currentPage === 'products'">
+        <!-- Replace with your ProductDetailView component content -->
+        <div>
+          Product Detail View Component Content
+        </div>
+      </template>
+      
+      <template x-if="currentPage === 'login'">
+        <!-- Replace with your Login component content -->
+        <div>
+          Login Component Content
+        </div>
+      </template>
+    </div>
+    
+    
+    <div x-data="{
+      isNavbarOpen: false,
+      toggleNavbar() {
+        this.isNavbarOpen = !this.isNavbarOpen;
+      }
+    }">
+      <header class="sticky z-50 top-0">
+        <nav class="bg-gray-500 border-gray-200">
+          <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
+            <a href="/" class="flex items-center space-x-3 rtl:space-x-reverse">
+              <img src="/online-shop.png" class="h-8" alt="Flowbite Logo">
+              <span class="self-center text-2xl font-semibold whitespace-nowrap text-white">
+                SwiftCart
+              </span>
+            </a>
+            <button @click="toggleNavbar" class="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-white rounded-lg md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 " aria-expanded="false">
+              <span class="sr-only">Open main menu</span>
+              <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 17 14">
+                <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M1 1h15M1 7h15M1 13h15"/>
+              </svg>
+            </button>
+    
+            <div x-show="isNavbarOpen" class="w-full md:w-auto" id="navbar-dropdown">
+              <ul class="flex flex-col top-10 font-medium p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-500 md:space-x-8 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0">
+                <li>
+                  <a href="/" class="block py-2 px-3 text-white rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0">Wishlist</a>
+                </li>
+                <a href="/">
+                  <li class="hidden lg:block md:block relative">
+                    <div class="t-0 absolute left-3 -top-4">
+                      <p class="flex h-2 w-2 items-center  justify-center rounded-full bg-red-500 p-3 text-xs text-white">
+                        2
+                      </p>
+                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="file: h-6 w-6 stroke-white cursor-pointer">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"/>
+                    </svg>
+                  </li>
+                </a>
+                <li>
+                  <a href="/" class="lg:hidden md:hidden py-2 px-3 text-white rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0">Cart</a>
+                </li>
+                <li>
+                  <a href="/login" class="block py-2 px-3 text-white rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0">Login</a>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </nav>
+      </header>
+    </div>
+    
+    <div x-data="{ isNavbarOpen: false }">
+  <div x-show="!isNavbarOpen">
+    <header class="sticky z-50 top-0">
+      <nav class="bg-gray-500 border-gray-200">
+        <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
+          <a href="/">
+            <button class="flex items-center space-x-3 rtl:space-x-reverse">
+              <img src="/online-shop.png" class="h-8" alt="Flowbite Logo" />
+              <span class="self-center text-2xl font-semibold whitespace-nowrap text-white">
+                SwiftCart
+              </span>
+            </button>
+          </a>
+          <button @click="isNavbarOpen = !isNavbarOpen" class="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-white rounded-lg md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200" aria-expanded="false">
+            <span class="sr-only">Open main menu</span>
+            <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 17 14">
+              <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M1 1h15M1 7h15M1 13h15"/>
+            </svg>
+          </button>
+          <div class="hidden w-full md:block md:w-auto">
+            <ul class="flex flex-col top-10 font-medium p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-500 md:space-x-8 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0">
+              <li>
+                <a href="/" class="block py-2 px-3 text-white rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0">Wishlist</a>
+              </li>
+              <a href="/">
+                <li class="hidden lg:block md:block relative">
+                  <div class="t-0 absolute left-3 -top-4">
+                    <p class="flex h-2 w-2 items-center  justify-center rounded-full bg-red-500 p-3 text-xs text-white">
+                      2
+                    </p>
+                  </div>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="file: h-6 w-6 stroke-white cursor-pointer">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"/>
+                  </svg>
+                </li>
+              </a>
+              <li>
+                <a href="/" class="lg:hidden md:hidden py-2 px-3 text-white rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0">Cart</a>
+              </li>
+              <li>
+                <a href="/login" class="block py-2 px-3 text-white rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0">Login</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+    </header>
+  </div>
+
+  <main>
+    <!-- Alpine.js doesn't directly manage content like React's Outlet, so ensure your routes and content are structured accordingly in your SPA. -->
+    <!-- Placeholder for Outlet -->
+  </main>
+</div>
+
+<div x-data="{ isDropdownOpen: false }">
+  <header class="sticky z-50 top-0">
+    <nav class="bg-gray-500 border-gray-200 max-w-screen-xl mx-auto flex flex-wrap items-center justify-between p-4">
+      <a href="/" class="flex items-center space-x-3 rtl:space-x-reverse">
+        <img src="/online-shop.png" class="h-8" alt="Flowbite Logo">
+        <span class="self-center text-2xl font-semibold whitespace-nowrap text-white">
+          SwiftCart
+        </span>
+      </a>
+      <button
+        @click="isDropdownOpen = !isDropdownOpen"
+        class="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-white rounded-lg md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200"
+        aria-expanded="false"
+      >
+        <span class="sr-only">Open main menu</span>
+        <svg
+          class="w-5 h-5"
+          aria-hidden="true"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 17 14"
+        >
+          <path
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M1 1h15M1 7h15M1 13h15"
+          />
+        </svg>
+      </button>
+
+      <div
+        x-show.transition="isDropdownOpen"
+        id="navbar-dropdown"
+        class="hidden w-full md:block md:w-auto"
+      >
+        <ul class="flex flex-col top-10 font-medium p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-500 md:space-x-8 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0">
+          <li>
+            <a href="#" class="block py-2 px-3 text-white rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0">Wishlist</a>
+          </li>
+          <li>
+            <a href="#" class="hidden lg:block md:block relative">
+              <div class="absolute left-3 -top-4">
+                <p class="flex h-2 w-2 items-center justify-center rounded-full bg-red-500 p-3 text-xs text-white">2</p>
+              </div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                class="h-6 w-6 stroke-white cursor-pointer"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"
+                />
+              </svg>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="lg:hidden md:hidden py-2 px-3 text-white rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0">Cart</a>
+          </li>
+          <li>
+            <a href="#" class="block py-2 px-3 text-white rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0">Login</a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+</div>
+
+
+<div x-data="{ yellowStars: Math.round(@json(rate)), blankStars: 5 - Math.round(@json(rate)) }" class="flex items-left -ml-2 mb-2">
+  <template x-for="i in yellowStars">
+    <svg
+      x-bind:key="i"
+      class="w-4 h-4 text-yellow-300 ms-1"
+      aria-hidden="true"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="currentColor"
+      viewBox="0 0 22 20"
+    >
+      <path d="M20.924 7.625a1.523 1.523 0 0 0-1.238-1.044l-5.051-.734-2.259-4.577a1.534 1.534 0 0 0-2.752 0L7.365 5.847l-5.051.734A1.535 1.535 0 0 0 1.463 9.2l3.656 3.563-.863 5.031a1.532 1.532 0 0 0 2.226 1.616L11 17.033l4.518 2.375a1.534 1.534 0 0 0 2.226-1.617l-.863-5.03L20.537 9.2a1.523 1.523 0 0 0 .387-1.575Z" />
+    </svg>
+  </template>
+  <template x-for="i in blankStars">
+    <svg
+      x-bind:key="i"
+      class="w-4 h-4 ms-1 text-gray-300 dark:text-gray-500"
+      aria-hidden="true"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="currentColor"
+      viewBox="0 0 22 20"
+    >
+      <path d="M20.924 7.625a1.523 1.523 0 0 0-1.238-1.044l-5.051-.734-2.259-4.577a1.534 1.534 0 0 0-2.752 0L7.365 5.847l-5.051.734A1.535 1.535 0 0 0 1.463 9.2l3.656 3.563-.863 5.031a1.532 1.532 0 0 0 2.226 1.616L11 17.033l4.518 2.375a1.534 1.534 0 0 0 2.226-1.617l-.863-5.03L20.537 9.2a1.523 1.523 0 0 0 .387-1.575Z" />
+    </svg>
+  </template>
+</div>
+
+<div x-data="{ sorting: '@json(sorting)' }" x-init="() => { $watch('sorting', value => handleSort(value)) }" class="flex sm:w-[95%] max-w-[21rem] md:w-full">
+  <label for="sort" class="w-20 my-auto font-semibold">Sort by: </label>
+  <select x-model="sorting" id="sort" class="p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-e-lg border-s-gray-50 border-s-2 border border-gray-300 focus:ring-blue-500 focus:border-blue-500">
+    <option value="default">Default</option>
+    <option value="low">Price: Low to High</option>
+    <option value="high">Price: High to Low</option>
+  </select>
+</div>
+
+<div x-data="{ isLoading: true }"
+     x-init="setTimeout(() => isLoading = false, 2000)"
+     role="status"
+     class="bg-white max-w-sm p-4 border border-gray-200 rounded shadow animate-pulse md:p-6 dark:border-gray-700"
+     x-bind:class="{ 'opacity-50': isLoading }">
+  <div class="flex items-center justify-center h-48 mb-4 bg-gray-300 rounded dark:bg-gray-700">
+    <svg class="w-10 h-10 text-gray-200 dark:text-gray-600" aria-hidden="true"
+         xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 20">
+      <path
+        d="M14.066 0H7v5a2 2 0 0 1-2 2H0v11a1.97 1.97 0 0 0 1.934 2h12.132A1.97 1.97 0 0 0 16 18V2a1.97 1.97 0 0 0-1.934-2ZM10.5 6a1.5 1.5 0 1 1 0 2.999A1.5 1.5 0 0 1 10.5 6Zm2.221 10.515a1 1 0 0 1-.858.485h-8a1 1 0 0 1-.9-1.43L5.6 10.039a.978.978 0 0 1 .936-.57 1 1 0 0 1 .9.632l1.181 2.981.541-1a.945.945 0 0 1 .883-.522 1 1 0 0 1 .879.529l1.832 3.438a1 1 0 0 1-.031.988Z"/>
+      <path d="M5 5V.13a2.96 2.96 0 0 0-1.293.749L.879 3.707A2.98 2.98 0 0 0 .13 5H5Z"/>
+    </svg>
+  </div>
+  <div class="h-2 bg-gray-200 rounded-full dark:bg-gray-700 mb-2.5" x-show="!isLoading"></div>
+  <div class="h-2.5 bg-gray-200 rounded-full dark:bg-gray-700 w-48 mb-4" x-show="!isLoading"></div>
+  <div class="h-2.5 bg-gray-200 rounded-full dark:bg-gray-700 w-10 mb-4" x-show="!isLoading"></div>
+  <span class="sr-only" x-show="isLoading">Loading...</span>
+</div>
+
+<div x-data="{ isFavorited: false }"
+     @click="window.location.href = `/products/${props.id}`"
+     class="flex flex-col max-h-[130rem] cursor-pointer max-w-80 hover:-translate-y-1 hover:scale-105 duration-300 bg-white border border-slate-200 shadow shadow-slate-950/5 rounded-2xl overflow-hidden">
+  <img class="object-contain h-48 mt-3" x-bind:src="props.image" alt="Product Image">
+
+  <div class="flex-1 flex flex-col p-6">
+    <div class="flex-1">
+      <header class="mb-2 flex-2">
+        <h2 class="text-lg line-clamp-2 font-extrabold leading-snug">
+          <div class="text-slate-600 focus-visible:outline-none focus-visible:ring focus-visible:ring-indigo-300" x-text="props.title"></div>
+        </h2>
+      </header>
+      <div class="text-base line-clamp-2 font-extrabold text-slate-500 leading-snug">
+        <h2 x-text="'$' + props.price"></h2>
+      </div>
+      <div x-data="{ rating: props.rating }">
+        <template x-for="star in Array.from({ length: Math.round(rating) })" :key="star">
+          <svg class="w-4 h-4 text-yellow-300 ms-1" aria-hidden="true"
+               xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 22 20">
+            <path d="M20.924 7.625a1.523 1.523 0 0 0-1.238-1.044l-5.051-.734-2.259-4.577a1.534 1.534 0 0 0-2.752 0L7.365 5.847l-5.051.734A1.535 1.535 0 0 0 1.463 9.2l3.656 3.563-.863 5.031a1.532 1.532 0 0 0 2.226 1.616L11 17.033l4.518 2.375a1.534 1.534 0 0 0 2.226-1.617l-.863-5.03L20.537 9.2a1.523 1.523 0 0 0 .387-1.575Z"/>
+          </svg>
+        </template>
+        <template x-for="star in Array.from({ length: 5 - Math.round(rating) })" :key="star">
+          <svg class="w-4 h-4 ms-1 text-gray-300 dark:text-gray-500" aria-hidden="true"
+               xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 22 20">
+            <path d="M20.924 7.625a1.523 1.523 0 0 0-1.238-1.044l-5.051-.734-2.259-4.577a1.534 1.534 0 0 0-2.752 0L7.365 5.847l-5.051.734A1.535 1.535 0 0 0 1.463 9.2l3.656 3.563-.863 5.031a1.532 1.532 0 0 0 2.226 1.616L11 17.033l4.518 2.375a1.534 1.534 0 0 0 2.226-1.617l-.863-5.03L20.537 9.2a1.523 1.523 0 0 0 .387-1.575Z"/>
+          </svg>
+        </template>
+      </div>
+    </div>
+
+    <div class="flex mt-1 space-x-2">
+      <div class="justify-start flex-1">
+        <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10"
+              x-text="props.category"></span>
+      </div>
+      <div class="justify-end space-x-2">
+        <button @click="toggleFavorite" :class="{ 'text-red-500': isFavorited }">
+          <svg class="me-1.5 h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
+               viewBox="0 0 24 24">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12.01 6.001C6.5 1 1 8 5.782 13.001L12.011 20l6.23-7C23 8 17.5 1 12.01 6.002Z"/>
+          </svg>
+        </button>
+        <button class="inline-flex justify-center whitespace-nowrap rounded-lg bg-cyan-700 px-3 py-2 text-sm font-medium text-white hover:bg-cyan-900 focus-visible:outline-none focus-visible:ring focus-visible:ring-indigo-300 transition-colors">
+          Add To Cart
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div x-data="{ rating: { rate: props.rating.rate, count: props.rating.count }, isFavorited: false }"
+     class="mt-6 sm:mt-8 lg:flex lg:items-start lg:max-w-6xl xl:max-w-7xl">
+  <div class="mx-auto w-2/5 flex-none">
+    <img x-bind:src="props.image" alt="" class="w-[90%] h-[90%]"/>
+  </div>
+  <div class="mx-auto w-[90%] space-y-2">
+    <h1 class="text-2xl md:text-4xl lg:text-4xl font-bold" x-text="props.title"></h1>
+    <div class="flex gap-2" x-show="rating.rate">
+      <template x-for="star in Array.from({ length: Math.round(rating.rate) })" :key="star">
+        <svg class="w-4 h-4 text-yellow-300 ms-1" aria-hidden="true"
+             xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 22 20">
+          <path d="M20.924 7.625a1.523 1.523 0 0 0-1.238-1.044l-5.051-.734-2.259-4.577a1.534 1.534 0 0 0-2.752 0L7.365 5.847l-5.051.734A1.535 1.535 0 0 0 1.463 9.2l3.656 3.563-.863 5.031a1.532 1.532 0 0 0 2.226 1.616L11 17.033l4.518 2.375a1.534 1.534 0 0 0 2.226-1.617l-.863-5.03L20.537 9.2a1.523 1.523 0 0 0 .387-1.575Z"/>
+        </svg>
+      </template>
+      <div x-text="'Reviews: ' + rating.count"></div>
+    </div>
+
+    <span x-text="props.category"
+          class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10"></span>
+
+    <h3 class="text-xl md:text-2xl lg:text-2xl font-bold" x-text="'$' + props.price"></h3>
+    <button @click="isFavorited = !isFavorited"
+            class="bg-cyan-700 hover:bg-cyan-900 w-[90%] md:w-[14rem] lg:w-[14rem] text-white font-bold py-2 px-4 rounded">
+      <svg x-show="isFavorited" class="me-1.5 h-5 w-5 text-red-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
+           fill="none" viewBox="0 0 24 24">
+        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12.01 6.001C6.5 1 1 8 5.782 13.001L12.011 20l6.23-7C23 8 17.5 1 12.01 6.002Z"/>
+      </svg>
+      Add To Favorites
+    </button>
+
+    <button class="bg-cyan-700 hover:bg-cyan-900 w-[90%] md:w-[14rem] lg:w-[14rem] text-white font-bold py-2 px-4 rounded">
+      Add To Cart
+    </button>
+
+    <h2 class="text-lg font-bold">Description</h2>
+    <p x-text="props.description"></p>
+  </div>
+</div>
+
+<div x-data="{ products: [], loading: true, error: null }"
+     x-init="fetchProducts()">
+  <template x-if="loading && !error">
+    <div class="grid justify-center">
+      <div class="lg:max-h-[130rem] max-w-xl mx-auto grid gap-4 grid-cols-1 lg:grid-cols-4 md:grid-cols-2 items-center lg:max-w-none my-4">
+        <template x-for="item in Array.from({ length: 20 })">
+          <div x-data x-init="CardSkeleton()" x-ref="skeletons"></div>
+        </template>
+      </div>
+    </div>
+  </template>
+  <template x-if="error">
+    <div class="grid justify-center">
+      <Error :error="error" />
+    </div>
+  </template>
+  <template x-if="!loading && !error">
+    <div class="grid justify-center">
+      <div class="lg:max-h-[130rem] max-w-xl mx-auto grid gap-4 grid-cols-1 lg:grid-cols-4 md:grid-cols-2 items-center lg:max-w-none my-4">
+        <template x-for="(product, index) in products" :key="index">
+          <div x-data x-init="ProductCard(product)">
+            <img x-bind:src="product.image" alt="Product Image" class="object-contain h-48 mt-3"/>
+            <div class="flex-1 flex flex-col p-6">
+              <div class="flex-1">
+                <header class="mb-2 flex-2">
+                  <h2 class="text-lg line-clamp-2 font-extrabold leading-snug"
+                      x-text="product.title"></h2>
+                </header>
+                <div class="flex gap-2">
+                  <svg class="w-4 h-4 text-yellow-300 ms-1" aria-hidden="true"
+                       xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 22 20">
+                    <path d="M20.924 7.625a1.523 1.523 0 0 0-1.238-1.044l-5.051-.734-2.259-4.577a1.534 1.534 0 0 0-2.752 0L7.365 5.847l-5.051.734A1.535 1.535 0 0 0 1.463 9.2l3.656 3.563-.863 5.031a1.532 1.532 0 0 0 2.226 1.616L11 17.033l4.518 2.375a1.534 1.534 0 0 0 2.226-1.617l-.863-5.03L20.537 9.2a1.523 1.523 0 0 0 .387-1.575Z"/>
+                  </svg>
+                  <div x-text="'Reviews: ' + product.rating.count"></div>
+                </div>
+                <div class="text-base line-clamp-2 font-extrabold text-slate-500 leading-snug">
+                  <h2 x-text="'$' + product.price"></h2>
+                </div>
+              </div>
+              <div class="flex mt-1 space-x-2">
+                <div class="justify-start flex-1">
+                  <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10"
+                        x-text="product.category"></span>
+                </div>
+                <div class="justify-end space-x-2">
+                  <button @click="addToFavorites(product)" x-bind:class="{ 'text-red-500': product.isFavorited }">
+                    <svg class="me-1.5 h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
+                         viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 5.4c2.2-2.1 5.8-2.1 8 0 .9 1.1 1.4 2.4 1.6 3.8H10.4c.2-1.4.7-2.7 1.6-3.8z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 9c-1.1 0-2 .9-2 2s.9 2 2 2h12c1.1 0 2-.9 2-2s-.9-2-2-2M8 20H5a2 2 0 01-2-2v-5a2 2 0 012-2h3m10 0h3a2 2 0 012 2v5a2 2 0 01-2 2h-3m-5-3v3"/>
+                    </svg>
+                    Add to Favorites
+                  </button>
+                  <button class="inline-flex justify-center whitespace-nowrap rounded-lg bg-cyan-700 px-3 py-2 text-sm font-medium text-white hover:bg-cyan-900 focus-visible:outline-none focus-visible:ring focus-visible:ring-indigo-300 transition-colors">
+                    Add To Cart
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+  </template>
+</div>
+
+<script>
+  function fetchProducts() {
+    // Simulating async data fetching
+    setTimeout(() => {
+      const products = [
+        { id: 1, title: 'Product 1', image: '/product1.jpg', price: 50, rating: { rate: 4.5, count: 20 }, category: 'Electronics' },
+        { id: 2, title: 'Product 2', image: '/product2.jpg', price: 70, rating: { rate: 3.8, count: 15 }, category: 'Clothing' },
+        { id: 3, title: 'Product 3', image: '/product3.jpg', price: 120, rating: { rate: 4.2, count: 25 }, category: 'Home' },
+      ];
+      Alpine.data('products', products);
+      Alpine.data('loading', false);
+    }, 2000);
+  }
+
+  function CardSkeleton() {
+    return {
+      loading: true,
+    };
+  }
+
+  function ProductCard(product) {
+    return {
+      product: product,
+      addToFavorites(product) {
+        product.isFavorited = !product.isFavorited;
+      }
+    };
+  }
+</script>
+
+<div x-data="{ isLoading: true }"
+     class="space-y-8 mt-6 sm:mt-8 animate-pulse md:space-y-0 md:space-x-8 rtl:space-x-reverse md:flex md:items-center">
+  <template x-if="isLoading">
+    <div class="flex items-center justify-center w-full h-96 bg-gray-400 rounded sm:w-96 dark:bg-gray-700">
+      <svg class="w-10 h-10 text-gray-500 dark:text-gray-600" aria-hidden="true"
+           xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 18" transform="scale(5)">
+        <path
+          d="M18 0H2a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2Zm-5.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm4.376 10.481A1 1 0 0 1 16 15H4a1 1 0 0 1-.895-1.447l3.5-7A1 1 0 0 1 7.468 6a.965.965 0 0 1 .9.5l2.775 4.757 1.546-1.887a1 1 0 0 1 1.618.1l2.541 4a1 1 0 0 1 .028 1.011Z"/>
+      </svg>
+    </div>
+    <div class="w-full -mt-10">
+      <div class="h-4 bg-gray-400 rounded-full dark:bg-gray-700 max-w-[660px] mb-2.5" x-show="isLoading"></div>
+      <div class="h-2.5 bg-gray-400 rounded-full dark:bg-gray-700 w-48 mb-4" x-show="isLoading"></div>
+      <div class="h-2 bg-gray-400 rounded-full dark:bg-gray-700 max-w-[480px] mb-2.5" x-show="isLoading"></div>
+      <div class="h-2 bg-gray-400 rounded-full dark:bg-gray-700 mb-2.5" x-show="isLoading"></div>
+      <div class="h-2 bg-gray-400 rounded-full dark:bg-gray-700 max-w-[440px] mb-2.5" x-show="isLoading"></div>
+      <div class="h-2 bg-gray-400 rounded-full dark:bg-gray-700 max-w-[360px]" x-show="isLoading"></div>
+    </div>
+  </template>
+  <span class="sr-only">Loading...</span>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const skeletonComponent = {
+      isLoading: true,
+      mounted() {
+        setTimeout(() => {
+          this.isLoading = false; // Simulate end of loading after a delay
+        }, 2000); // Simulate loading delay
+      }
+    };
+
+    Alpine.data('skeletonComponent', skeletonComponent);
+  });
+</script>
+
+
+
+  <script>
+    function toggleFavorite() {
+      isFavorited = !isFavorited;
+      // Implement your logic to add/remove from favorites here
+      if (isFavorited) {
+        console.log('Added to favorites:', props.id);
+        // Add your logic to store this product in favorites
+      } else {
+        console.log('Removed from favorites:', props.id);
+        // Add your logic to remove this product from favorites
+      }
+    }
+  </script>
+</div>
+
+<div x-data="{ showFilter: false, showSort: false }">
+  <div class="grid lg:flex gap-y-4 gap-x-48 lg:items-start mt-3 mx-auto justify-center">
+    <button @click="showFilter = !showFilter" class="text-blue-500">Filter</button>
+    <button @click="showSort = !showSort" class="text-blue-500">Sort</button>
+  </div>
+  
+  <div x-show="showFilter">
+    <!-- Replace with your Filter component content -->
+    Filter Component Content
+  </div>
+  
+  <div x-show="showSort">
+    <!-- Replace with your Sort component content -->
+    Sort Component Content
+  </div>
+  
+  <!-- Replace with your ProductList component content -->
+  <div>
+    Product List Component Content
+  </div>
+</div>
+
+
+    <div id="root" x-show="isOpen">
+      <!-- Your content here -->
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/alpine.min.js" defer></script>
+    <script type="module">
+      import { start } from './src/main.js';
+      start();
+    </script>
   </body>
 </html>

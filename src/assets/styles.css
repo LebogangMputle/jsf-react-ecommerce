@@ -1,0 +1,115 @@
+/* Reset and Base Styles */
+/* You can add any additional global styles or resets here */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Utility Classes */
+  /* Flexbox Utilities */
+  .flex {
+    display: flex;
+  }
+  
+  .flex-wrap {
+    flex-wrap: wrap;
+  }
+  
+  .items-center {
+    align-items: center;
+  }
+  
+  .justify-center {
+    justify-content: center;
+  }
+  
+  .space-x-4 > * + * {
+    margin-left: 1rem;
+  }
+  
+  /* Typography */
+  .text-xs {
+    font-size: 0.75rem;
+  }
+  
+  .text-sm {
+    font-size: 0.875rem;
+  }
+  
+  .text-base {
+    font-size: 1rem;
+  }
+  
+  .text-lg {
+    font-size: 1.125rem;
+  }
+  
+  .text-xl {
+    font-size: 1.25rem;
+  }
+  
+  /* Spacing Utilities */
+  .mt-3 {
+    margin-top: 0.75rem;
+  }
+  
+  .mx-auto {
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  /* Grid */
+  .grid {
+    display: grid;
+  }
+  
+  .gap-x-48 > * + * {
+    margin-left: 12rem; /* Adjust as per your design */
+  }
+  
+  .gap-y-4 > * + * {
+    margin-top: 1rem;
+  }
+  
+  /* Text Color */
+  .text-blue-500 {
+    color: #3b82f6;
+  }
+  
+  /* Button */
+  .btn {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background-color: #4a5568;
+    color: #fff;
+    border-radius: 0.25rem;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  
+  .btn:hover {
+    background-color: #2d3748;
+  }
+  
+  /* Forms */
+  .form-input {
+    display: block;
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.25rem;
+    font-size: 1rem;
+  }
+  
+  /* Responsive Utilities */
+  @media (min-width: 768px) {
+    .lg:flex {
+      display: flex;
+    }
+  
+    .lg:items-start {
+      align-items: flex-start;
+    }
+  }
+  
